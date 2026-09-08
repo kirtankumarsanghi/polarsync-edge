@@ -1,0 +1,21 @@
+{
+  "demand_scaler": {
+    "mean": 62.5,
+    "std": 11.2,
+    "min_kw": 40.0,
+    "max_kw": 85.0
+  },
+  "solar_scaler": {
+    "max_kw": 95.0,
+    "peak_window_start": 6,
+    "peak_window_end": 16,
+    "albedo_boost": 1.15
+  },
+  "station_profile": {
+    "name": "NCPOR Bharati Station",
+    "battery_capacity_kwh": 600.0,
+    "baseline_life_support_kw": 47.0,
+    "daily_demand_target_kwh": 900.0,
+    "daily_solar_target_kwh": 520.0
+  }
+}

@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: polarsync-timescaledb
+    restart: always
+    environment:
+      POSTGRES_DB: polarsync_edge
+      POSTGRES_USER: polarsync
+      POSTGRES_PASSWORD: polarpass123
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - polarsync-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polarsync -d polarsync_edge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: polarsync-backend
+    restart: always
+    environment:
+      - PORT=4000
+      - DATABASE_URL=postgres://polarsync:polarpass123@timescaledb:5432/polarsync_edge
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    networks:
+      - polarsync-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: polarsync-frontend
+    restart: always
+    environment:
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=http://backend:4000
+      - NEXT_PUBLIC_SOCKET_URL=http://backend:4000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - polarsync-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: polarsync-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - polarsync-net
+
+volumes:
+  timescale_data:
+    name: polarsync_timescale_data
+
+networks:
+  polarsync-net:
+    name: polarsync_edge_network
+    driver: bridge
